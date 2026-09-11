@@ -1,0 +1,62 @@
+{
+  "dds": {
+    "backend": "dds",
+    "robot_id": "sea_stage",
+    "local_domain_id": 0,
+    "cyclone_config": "/etc/policy-runtime/cyclonedds.xml",
+    "sensor_queue_capacity": 64,
+    "external": {
+      "enabled": false,
+      "domain_id": 10,
+      "topics": []
+    }
+  },
+  "sensors": [
+    {
+      "name": "stage_axis",
+      "device": {
+        "type": "cia402",
+        "path": "/dev/EtherCAT0"
+      },
+      "args": {
+        "alias": 0,
+        "position": 0,
+        "vendor_id": "0x0000009a",
+        "product_code": "0x00030924",
+        "revision": "0x00010420",
+        "mode": "cst",
+        "scale": 1000.0,
+        "minimum": -0.5,
+        "maximum": 0.5,
+        "slew_limit": 0.02,
+        "following_error_limit": 0.5,
+        "command_timeout_ms": 100,
+        "safety_group": "stage"
+      }
+    }
+  ],
+  "actuators": [
+    {
+      "name": "stage_target",
+      "device": {
+        "type": "cia402",
+        "path": "/dev/EtherCAT0"
+      },
+      "args": {
+        "alias": 0,
+        "position": 0,
+        "vendor_id": "0x0000009a",
+        "product_code": "0x00030924",
+        "revision": "0x00010420",
+        "mode": "cst",
+        "scale": 1000.0,
+        "minimum": -0.5,
+        "maximum": 0.5,
+        "slew_limit": 0.02,
+        "following_error_limit": 0.5,
+        "command_timeout_ms": 100,
+        "safety_group": "stage"
+      }
+    }
+  ]
+}

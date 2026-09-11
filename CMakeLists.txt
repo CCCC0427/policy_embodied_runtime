@@ -131,8 +131,12 @@ policy_runtime_configure_target(robot-io-health)
 add_executable(ethercat-cycle-stats tools/ethercat_cycle_stats.cpp)
 policy_runtime_configure_target(ethercat-cycle-stats)
 
+add_executable(jog-stage tools/jog_stage.cpp)
+target_link_libraries(jog-stage PRIVATE policy_runtime_core)
+policy_runtime_configure_target(jog-stage)
+
 install(TARGETS robot-io-daemon policy-runtime-host robot-io-health
-                ethercat-cycle-stats
+                ethercat-cycle-stats jog-stage
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 install(FILES configs/robot_profiles/elmo_gold_example.json
     DESTINATION "${CMAKE_INSTALL_DATADIR}/policy-runtime/robot_profiles")
