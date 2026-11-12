@@ -26,6 +26,29 @@ AxisConfig axis_config() {
                     -1.0, 1.0, std::chrono::milliseconds{100}, "arm", 0.1, 0.5};
 }
 
+TEST(IghSdoSemanticsTest, SuppliesStartupTimeAndSynchronizesEveryBusCycle) {
+  using policy_runtime::test::igh_shim::clock_state;
+  policy_runtime::test::igh_shim::reset();
+  auto backend = std::make_shared<IghBackend>();
+  EthercatMaster master{backend, {EthercatAxisConfiguration{axis_config(), {}}}};
+  ASSERT_TRUE(master.open().has_value());
+  const auto initial = clock_state();
+  EXPECT_TRUE(initial.time_supplied_before_activation);
+  EXPECT_GT(initial.application_time, 0U);
+
+  master.cycle({});
+  master.cycle({});
+  const auto running = clock_state();
+  EXPECT_EQ(running.time_updates, initial.time_updates + 2U);
+  EXPECT_GE(running.application_time, initial.application_time);
+  EXPECT_EQ(running.synchronized_sends, 2U);
+
+  master.close();
+  master.cycle({});
+  EXPECT_EQ(clock_state().time_updates, running.time_updates);
+  EXPECT_EQ(clock_state().synchronized_sends, running.synchronized_sends);
+}
+
 TEST(IghSdoSemanticsTest, DownloadUsesExactCallerSizeAfterUploadChangesDataSize) {
   policy_runtime::test::igh_shim::reset();
   auto backend = std::make_shared<IghBackend>();

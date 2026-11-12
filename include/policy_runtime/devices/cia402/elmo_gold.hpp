@@ -21,7 +21,7 @@ class ElmoGoldDeviceDescription {
   static const PdoDefinition& rx_pdo_definition(profiles::Cia402Mode mode) noexcept;
   static std::span<const PdoDefinition> feedback_pdos() noexcept;
   static std::span<const SyncManagerDescription> sync_managers() noexcept;
-  static std::array<SdoDownloadRequest, 2> startup_sdos(profiles::Cia402Mode mode);
+  static std::array<SdoDownloadRequest, 3> startup_sdos(profiles::Cia402Mode mode);
 };
 
 }  // namespace policy_runtime

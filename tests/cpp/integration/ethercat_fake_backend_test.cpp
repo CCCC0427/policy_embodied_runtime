@@ -443,7 +443,7 @@ TEST(EthercatFakeBackendTest, ConfiguresAndBindsBeforeActivation) {
   EXPECT_EQ(configured.tx_pdos, (std::vector<std::uint16_t>{0x1A02U, 0x1A11U}));
   EXPECT_EQ(configured.dc.assign_activate, 0x0300U);
   EXPECT_EQ(configured.dc.sync0_cycle_ns, 1'000'000U);
-  ASSERT_EQ(configured.startup_sdos.size(), 2U);
+  ASSERT_EQ(configured.startup_sdos.size(), 3U);
   EXPECT_EQ(configured.startup_sdos[0].address.index, 0x6060U);
   EXPECT_EQ(configured.startup_sdos[0].data,
             (std::vector<std::byte>{std::byte{8U}}));

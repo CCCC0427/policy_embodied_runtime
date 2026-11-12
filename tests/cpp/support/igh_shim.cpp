@@ -29,6 +29,9 @@ ec_slave_config slave;
 std::vector<std::unique_ptr<ec_sdo_request>> requests;
 std::vector<std::byte> last_download;
 std::size_t next_pdo_offset{};
+policy_runtime::test::igh_shim::ClockState clocks;
+bool reference_sync_queued{};
+bool slave_sync_queued{};
 
 }  // namespace
 
@@ -39,11 +42,16 @@ void reset() {
   last_download.clear();
   next_pdo_offset = 0U;
   domain.data.fill(0U);
+  clocks = {};
+  reference_sync_queued = false;
+  slave_sync_queued = false;
 }
 
 std::size_t last_download_size() { return last_download.size(); }
 
 std::span<const std::byte> last_download_data() { return last_download; }
+
+ClockState clock_state() { return clocks; }
 
 }  // namespace policy_runtime::test::igh_shim
 
@@ -116,14 +124,30 @@ int ecrt_slave_config_reg_pdo_entry(ec_slave_config_t*, uint16_t, uint8_t,
   return offset;
 }
 
-int ecrt_master_activate(ec_master_t*) { return 0; }
+int ecrt_master_activate(ec_master_t*) {
+  clocks.time_supplied_before_activation = clocks.application_time != 0U;
+  return 0;
+}
+void ecrt_master_application_time(ec_master_t*, uint64_t app_time) {
+  clocks.application_time = app_time;
+  ++clocks.time_updates;
+}
+void ecrt_master_sync_reference_clock(ec_master_t*) { reference_sync_queued = true; }
+void ecrt_master_sync_slave_clocks(ec_master_t*) { slave_sync_queued = true; }
 void ecrt_master_deactivate(ec_master_t*) {}
 size_t ecrt_domain_size(const ec_domain_t*) { return domain.data.size(); }
 uint8_t* ecrt_domain_data(ec_domain_t*) { return domain.data.data(); }
 int ecrt_master_receive(ec_master_t*) { return 0; }
 void ecrt_domain_process(ec_domain_t*) {}
 void ecrt_domain_queue(ec_domain_t*) {}
-int ecrt_master_send(ec_master_t*) { return 0; }
+int ecrt_master_send(ec_master_t*) {
+  if (reference_sync_queued && slave_sync_queued) {
+    ++clocks.synchronized_sends;
+  }
+  reference_sync_queued = false;
+  slave_sync_queued = false;
+  return 0;
+}
 
 void ecrt_domain_state(const ec_domain_t*, ec_domain_state_t* state) {
   *state = ec_domain_state_t{1U, EC_WC_COMPLETE};

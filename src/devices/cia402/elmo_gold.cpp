@@ -86,12 +86,16 @@ ElmoGoldDeviceDescription::sync_managers() noexcept {
   return kSyncManagers;
 }
 
-std::array<SdoDownloadRequest, 2> ElmoGoldDeviceDescription::startup_sdos(
+std::array<SdoDownloadRequest, 3> ElmoGoldDeviceDescription::startup_sdos(
     profiles::Cia402Mode mode) {
+  // 0x60C2 is value * 10^exponent seconds. Explicitly configure both parts
+  // instead of inheriting the exponent from a previous master's setup.
+  static_assert(sync0_cycle_ns() == 1'000'000U);
   return {
       SdoDownloadRequest{ObjectAddress{0x6060U, 0U},
                          {std::byte{static_cast<unsigned char>(mode)}}},
-      SdoDownloadRequest{ObjectAddress{0x60C2U, 1U}, {std::byte{0x02U}}},
+      SdoDownloadRequest{ObjectAddress{0x60C2U, 1U}, {std::byte{0x01U}}},
+      SdoDownloadRequest{ObjectAddress{0x60C2U, 2U}, {std::byte{0xFDU}}},
   };
 }
 

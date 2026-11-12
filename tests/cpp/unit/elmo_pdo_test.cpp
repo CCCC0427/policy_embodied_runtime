@@ -101,13 +101,16 @@ TEST(ElmoPdoTest, BuildsStaticModeAndEsiCycleTimeStartupSdos) {
                   std::pair{Cia402Mode::csv, std::byte{9U}},
                   std::pair{Cia402Mode::cst, std::byte{10U}}}) {
     const auto requests = ElmoGoldDeviceDescription::startup_sdos(mode);
-    ASSERT_EQ(requests.size(), 2U);
+    ASSERT_EQ(requests.size(), 3U);
     EXPECT_EQ(requests[0].address.index, 0x6060U);
     EXPECT_EQ(requests[0].address.subindex, 0U);
     EXPECT_EQ(requests[0].data, (std::vector<std::byte>{mode_value}));
     EXPECT_EQ(requests[1].address.index, 0x60C2U);
     EXPECT_EQ(requests[1].address.subindex, 1U);
-    EXPECT_EQ(requests[1].data, (std::vector<std::byte>{std::byte{0x02U}}));
+    EXPECT_EQ(requests[1].data, (std::vector<std::byte>{std::byte{0x01U}}));
+    EXPECT_EQ(requests[2].address.index, 0x60C2U);
+    EXPECT_EQ(requests[2].address.subindex, 2U);
+    EXPECT_EQ(requests[2].data, (std::vector<std::byte>{std::byte{0xFDU}}));
   }
 }
 

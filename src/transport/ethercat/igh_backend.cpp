@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstring>
 #include <limits>
 #include <type_traits>
@@ -17,6 +18,14 @@ constexpr std::uint32_t kMailboxTimeoutMs = 1000U;
 constexpr std::array<std::size_t, 4U> kDownloadRequestSizes{1U, 2U, 4U, 8U};
 
 enum class ActiveSdo { none, download, upload };
+
+std::uint64_t application_time_ns() noexcept {
+  // Use one monotonic time base at startup and in every bus cycle. Wall-clock
+  // corrections must not shift the DC reference clock or its SYNC0 phase.
+  return static_cast<std::uint64_t>(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+          std::chrono::steady_clock::now().time_since_epoch()).count());
+}
 
 template <class Callable>
 bool igh_call_succeeded(Callable&& callable) {
@@ -284,6 +293,9 @@ Result<void> IghBackend::activate() {
     return Result<void>::failure(
         {ErrorCode::invalid_argument, "IgH activation requires one inactive master"});
   }
+  // The configuration FSM needs application time to place the first SYNC0
+  // edge in the future, before cyclic traffic starts.
+  static_cast<void>(ecrt_master_application_time(impl_->master, application_time_ns()));
   if (ecrt_master_activate(impl_->master) < 0) {
     return Result<void>::failure(
         {ErrorCode::unavailable, "ecrt_master_activate failed"});
@@ -319,6 +331,7 @@ void IghBackend::deactivate() noexcept {
 
 void IghBackend::receive() noexcept {
   if (impl_->activated) {
+    static_cast<void>(ecrt_master_application_time(impl_->master, application_time_ns()));
     static_cast<void>(ecrt_master_receive(impl_->master));
   }
 }
@@ -341,6 +354,10 @@ void IghBackend::queue_domain() noexcept {
 
 void IghBackend::send() noexcept {
   if (impl_->activated) {
+    // Queue clock corrections before sending so they travel with this cycle's
+    // PDOs. Configuring SYNC0 alone does not keep the clocks synchronized.
+    static_cast<void>(ecrt_master_sync_reference_clock(impl_->master));
+    static_cast<void>(ecrt_master_sync_slave_clocks(impl_->master));
     static_cast<void>(ecrt_master_send(impl_->master));
   }
 }

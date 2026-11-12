@@ -105,6 +105,9 @@ int ecrt_slave_config_reg_pdo_entry(ec_slave_config_t* config, uint16_t index,
                                     uint8_t subindex, ec_domain_t* domain,
                                     unsigned int* bit_position);
 int ecrt_master_activate(ec_master_t* master);
+void ecrt_master_application_time(ec_master_t* master, uint64_t app_time);
+void ecrt_master_sync_reference_clock(ec_master_t* master);
+void ecrt_master_sync_slave_clocks(ec_master_t* master);
 void ecrt_master_deactivate(ec_master_t* master);
 size_t ecrt_domain_size(const ec_domain_t* domain);
 uint8_t* ecrt_domain_data(ec_domain_t* domain);
