@@ -47,11 +47,11 @@ SAFEOP 通常已允许输入过程数据交换，但输出尚不能按 OP 的方
 
 三个接口各自的作用：
 
-| 接口 | 作用 | 缺少时的影响 |
-| --- | --- | --- |
-| `ecrt_master_application_time` | 告诉 IgH 应用当前时间 | IgH 不会自行推进此时间，DC 启动相位和校时缺少应用基准 |
-| `ecrt_master_sync_reference_clock` | 让参考时钟跟随应用时间 | 参考设备时钟与电脑周期可能漂移 |
-| `ecrt_master_sync_slave_clocks` | 让其余 DC 时钟跟随参考时钟 | 多设备间可能失去共同时间基准；单设备也保留完整同步流程 |
+| 接口                                 | 作用              | 缺少时的影响                         |
+| ---------------------------------- | --------------- | ------------------------------ |
+| `ecrt_master_application_time`     | 告诉 IgH 应用当前时间   | IgH 不会自行推进此时间，DC 启动相位和校时缺少应用基准 |
+| `ecrt_master_sync_reference_clock` | 让参考时钟跟随应用时间     | 参考设备时钟与电脑周期可能漂移                |
+| `ecrt_master_sync_slave_clocks`    | 让其余 DC 时钟跟随参考时钟 | 多设备间可能失去共同时间基准；单设备也保留完整同步流程    |
 
 `src/devices/cia402/elmo_gold.cpp`：把插补周期设为 1 ms，并明确写入
 指数 -3，避免继承此前的指数设置。相关声明和回归测试同时更新。
