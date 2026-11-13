@@ -17,5 +17,6 @@ struct ClockState {
   bool time_supplied_before_activation{};
 };
 ClockState clock_state();
+void set_sync_monitor_result(std::uint32_t deviation);
 
 }  // namespace policy_runtime::test::igh_shim

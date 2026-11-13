@@ -32,6 +32,9 @@ std::size_t next_pdo_offset{};
 policy_runtime::test::igh_shim::ClockState clocks;
 bool reference_sync_queued{};
 bool slave_sync_queued{};
+bool monitor_queued{};
+bool monitor_received{};
+std::uint32_t monitor_result{};
 
 }  // namespace
 
@@ -45,6 +48,9 @@ void reset() {
   clocks = {};
   reference_sync_queued = false;
   slave_sync_queued = false;
+  monitor_queued = false;
+  monitor_received = false;
+  monitor_result = 0U;
 }
 
 std::size_t last_download_size() { return last_download.size(); }
@@ -52,6 +58,7 @@ std::size_t last_download_size() { return last_download.size(); }
 std::span<const std::byte> last_download_data() { return last_download; }
 
 ClockState clock_state() { return clocks; }
+void set_sync_monitor_result(std::uint32_t deviation) { monitor_result = deviation; }
 
 }  // namespace policy_runtime::test::igh_shim
 
@@ -134,6 +141,10 @@ void ecrt_master_application_time(ec_master_t*, uint64_t app_time) {
 }
 void ecrt_master_sync_reference_clock(ec_master_t*) { reference_sync_queued = true; }
 void ecrt_master_sync_slave_clocks(ec_master_t*) { slave_sync_queued = true; }
+void ecrt_master_sync_monitor_queue(ec_master_t*) { monitor_queued = true; }
+uint32_t ecrt_master_sync_monitor_process(ec_master_t*) {
+  return monitor_received ? monitor_result : UINT32_MAX;
+}
 void ecrt_master_deactivate(ec_master_t*) {}
 size_t ecrt_domain_size(const ec_domain_t*) { return domain.data.size(); }
 uint8_t* ecrt_domain_data(ec_domain_t*) { return domain.data.data(); }
@@ -141,6 +152,8 @@ int ecrt_master_receive(ec_master_t*) { return 0; }
 void ecrt_domain_process(ec_domain_t*) {}
 void ecrt_domain_queue(ec_domain_t*) {}
 int ecrt_master_send(ec_master_t*) {
+  monitor_received = monitor_queued;
+  monitor_queued = false;
   if (reference_sync_queued && slave_sync_queued) {
     ++clocks.synchronized_sends;
   }

@@ -253,6 +253,12 @@ if(POLICY_RUNTIME_BUILD_TESTS)
         PRIVATE policy_runtime_core GTest::gtest_main)
     policy_runtime_configure_target(ethercat_fake_backend_test)
 
+    add_executable(realtime_loop_test tests/cpp/unit/realtime_loop_test.cpp
+        src/robot_io/daemon/realtime_loop.cpp)
+    target_include_directories(realtime_loop_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_link_libraries(realtime_loop_test PRIVATE GTest::gtest_main Threads::Threads)
+    policy_runtime_configure_target(realtime_loop_test)
+
     add_executable(igh_sdo_semantics_test
         tests/cpp/integration/igh_sdo_semantics_test.cpp
         tests/cpp/support/igh_shim.cpp
@@ -336,6 +342,8 @@ if(POLICY_RUNTIME_BUILD_TESTS)
         TEST_PREFIX ethercat_fake_backend_test. DISCOVERY_MODE PRE_TEST)
     gtest_discover_tests(igh_sdo_semantics_test
         TEST_PREFIX igh_sdo_semantics_test. DISCOVERY_MODE PRE_TEST)
+    gtest_discover_tests(realtime_loop_test
+        TEST_PREFIX realtime_loop_test. DISCOVERY_MODE PRE_TEST)
     add_test(NAME service_install_layout_test
         COMMAND "${CMAKE_COMMAND}"
             "-DPOLICY_RUNTIME_BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}"

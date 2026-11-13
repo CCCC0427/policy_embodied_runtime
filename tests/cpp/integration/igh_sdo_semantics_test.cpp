@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <memory>
+#include <limits>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -47,6 +48,34 @@ TEST(IghSdoSemanticsTest, SuppliesStartupTimeAndSynchronizesEveryBusCycle) {
   master.cycle({});
   EXPECT_EQ(clock_state().time_updates, running.time_updates);
   EXPECT_EQ(clock_state().synchronized_sends, running.synchronized_sends);
+}
+
+TEST(IghSdoSemanticsTest, MeasuresDcDeviationAndMarksMissingRepliesUnavailable) {
+  using namespace policy_runtime::test::igh_shim;
+  reset();
+  auto backend = std::make_shared<IghBackend>();
+  EthercatMaster master{backend, {EthercatAxisConfiguration{axis_config(), {}}}};
+  std::int64_t measured = -1;
+  ASSERT_TRUE(master.set_process_image_handler(
+      [](void* context, std::span<std::byte>, const policy_runtime::DomainHealth& health,
+         bool) noexcept { *static_cast<std::int64_t*>(context) = health.dc_deviation_ns; },
+      &measured).has_value());
+  ASSERT_TRUE(master.open().has_value());
+  set_sync_monitor_result(731U);
+  master.cycle({});
+  EXPECT_EQ(measured, -1);
+  master.cycle({});
+  EXPECT_EQ(measured, 731);
+  set_sync_monitor_result(std::numeric_limits<std::uint32_t>::max());
+  master.cycle({});
+  EXPECT_EQ(measured, -1);
+  set_sync_monitor_result(0U);
+  master.cycle({});
+  EXPECT_EQ(measured, 0);
+  master.close();
+  ASSERT_TRUE(master.open().has_value());
+  master.cycle({});
+  EXPECT_EQ(measured, -1);
 }
 
 TEST(IghSdoSemanticsTest, DownloadUsesExactCallerSizeAfterUploadChangesDataSize) {

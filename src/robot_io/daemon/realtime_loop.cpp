@@ -183,9 +183,12 @@ Result<RealtimeSetupStatus> RealtimeLoop::prepare() {
   status.realtime_guarantee =
       status.thread_state_captured && status.preempt_rt &&
       status.memory_locked && status.affinity_set && status.sched_fifo;
-  setup_active_ = status.realtime_guarantee;
+  // A non-RT kernel cannot provide a hard guarantee, but FIFO, affinity and
+  // locked memory still reduce jitter. Keep a complete successful setup.
+  setup_active_ = status.thread_state_captured && status.memory_locked &&
+                  status.affinity_set && status.sched_fifo;
   reset_schedule();
-  if (!status.realtime_guarantee) {
+  if (!setup_active_) {
     release();
   }
   return Result<RealtimeSetupStatus>::success(status);

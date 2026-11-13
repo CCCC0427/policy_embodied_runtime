@@ -89,6 +89,8 @@ struct IghBackend::Impl {
   std::uint8_t* domain_data{};
   std::size_t domain_size{};
   bool activated{};
+  bool sync_monitor_pending{};
+  std::int64_t dc_deviation_ns{-1};
   std::vector<Slave> slaves;
 };
 
@@ -326,6 +328,8 @@ void IghBackend::deactivate() noexcept {
   impl_->domain_data = nullptr;
   impl_->domain_size = 0U;
   impl_->activated = false;
+  impl_->sync_monitor_pending = false;
+  impl_->dc_deviation_ns = -1;
   impl_->slaves.clear();
 }
 
@@ -333,6 +337,13 @@ void IghBackend::receive() noexcept {
   if (impl_->activated) {
     static_cast<void>(ecrt_master_application_time(impl_->master, application_time_ns()));
     static_cast<void>(ecrt_master_receive(impl_->master));
+    if (impl_->sync_monitor_pending) {
+      // IgH returns UINT32_MAX when the monitor datagram was not received.
+      const auto deviation = ecrt_master_sync_monitor_process(impl_->master);
+      impl_->dc_deviation_ns = deviation == std::numeric_limits<std::uint32_t>::max()
+                                   ? -1 : static_cast<std::int64_t>(deviation);
+      impl_->sync_monitor_pending = false;
+    }
   }
 }
 
@@ -358,6 +369,10 @@ void IghBackend::send() noexcept {
     // PDOs. Configuring SYNC0 alone does not keep the clocks synchronized.
     static_cast<void>(ecrt_master_sync_reference_clock(impl_->master));
     static_cast<void>(ecrt_master_sync_slave_clocks(impl_->master));
+    impl_->sync_monitor_pending = igh_call_succeeded([&] {
+      return ecrt_master_sync_monitor_queue(impl_->master);
+    });
+    if (!impl_->sync_monitor_pending) impl_->dc_deviation_ns = -1;
     static_cast<void>(ecrt_master_send(impl_->master));
   }
 }
@@ -384,7 +399,8 @@ DomainHealth IghBackend::domain_health() const noexcept {
   }
   const bool complete = domain_state.wc_state == EC_WC_COMPLETE;
   return DomainHealth{domain_state.working_counter, std::nullopt,
-                      complete, master_state.link_up != 0U, slaves_operational, 0,
+                      complete, master_state.link_up != 0U, slaves_operational,
+                      impl_->dc_deviation_ns,
                       operational_axes_mask};
 }
 

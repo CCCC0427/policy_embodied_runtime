@@ -132,6 +132,8 @@ struct DomainHealth {
   bool working_counter_complete{};
   bool link_up{};
   bool all_slaves_operational{};
+  // IgH DC system-time-difference monitor magnitude; -1 means unavailable.
+  // This is not the host-to-reference clock offset.
   std::int64_t dc_deviation_ns{};
   // Bit N describes configured axis N when all_slaves_operational is false.
   // The first release supports at most twelve configured axes.

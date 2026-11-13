@@ -2,6 +2,7 @@
 
 #include <cerrno>
 #include <chrono>
+#include <cstdio>
 #include <exception>
 #include <map>
 #include <memory>
@@ -740,6 +741,12 @@ Result<void> RobotIoDaemon::run() {
   } else {
     realtime_guarantee_.store(realtime.value().realtime_guarantee,
                               std::memory_order_release);
+    const auto& rt = realtime.value();
+    std::fprintf(stderr,
+                 "[io-setup] preempt_rt=%d memory_locked=%d affinity=%d fifo=%d "
+                 "cpu=%d priority=%d guarantee=%d\n",
+                 rt.preempt_rt, rt.memory_locked, rt.affinity_set, rt.sched_fifo,
+                 loop_.config().cpu, loop_.config().priority, rt.realtime_guarantee);
   }
   bool sleep_failed = !realtime.has_value();
   while (running_.load(std::memory_order_acquire) &&
